@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Test setting up a minimal local certificate authority using cfssl on macOS.
+# Assumes cfssl has already been installed. Use "brew install cfssl" to install
+# it.
+set -euxo pipefail
+
+# Create the root key and self-signed certificate.
+cfssl genkey -initca root-cert-config.json | cfssljson -bare root
+
+# Add the root certificate to the macOS System keychain.
+sudo security add-trusted-cert -d -r trustRoot \
+  -k /Library/Keychains/System.keychain root.pem
+
+# The above is really the full setup initial setup needed to establish things.
+# Below this is primarily a test/demonstration.
+
+# Create the intermediate key and certificate signed by the root.
+cfssl gencert -ca root.pem -ca-key root-key.pem -config ca-config.json \
+  -profile intermediate intermediate-cert-config.json \
+    | cfssljson -bare intermediate
+
+# Create the server key and certificate signed by the intermediate.
+cfssl gencert -ca intermediate.pem -ca-key intermediate-key.pem \
+  -config ca-config.json -profile server server-cert-config.json \
+    | cfssljson -bare server
+
+# Create the certificate chain for the server, so recipients can verify the
+# certificate from the leaf to the root.
+cat server.pem intermediate.pem root.pem > chain.pem
+
+# Run a quick test by starting a python server in the background using the
+# certificate and key, then using curl to request a page and ensuring that it
+# works.
+python3 serve.py &
+serve_pid="${!}"
+sleep 0.1
+curl --fail https://127.0.0.1.sslip.io:8443 > /dev/null
+kill "${serve_pid}"

@@ -1,0 +1,10 @@
+{
+  "CN": "Local Development Server",
+  "hosts": [
+    "127.0.0.1.sslip.io"
+  ],
+  "key": {
+    "algo": "ecdsa",
+    "curve": "P-256"
+  }
+}

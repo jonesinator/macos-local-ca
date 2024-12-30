@@ -1,0 +1,7 @@
+{
+  "CN": "Local Development Root Certificate Authority",
+  "key": {
+    "algo": "ecdsa",
+    "curve": "P-256"
+  }
+}
